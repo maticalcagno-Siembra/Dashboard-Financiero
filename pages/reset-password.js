@@ -1,0 +1,121 @@
+import { useState } from 'react'
+import Head from 'next/head'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+
+const S = {
+  bg: '#060d1a', card: '#0a1628', border: '#0f2035', borderL: '#1a3554',
+  text: '#b8ccdf', muted: '#4a7096', dim: '#2e4a63', white: '#ffffff',
+  accent: '#3b82f6', green: '#00d28c',
+}
+
+export default function ResetPassword() {
+  const router = useRouter()
+  const { token } = router.query
+  const [form, setForm] = useState({ password: '', confirm: '' })
+  const [loading, setLoading] = useState(false)
+  const [done, setDone] = useState(false)
+  const [error, setError] = useState('')
+  const set = (k) => (e) => setForm((p) => ({ ...p, [k]: e.target.value }))
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
+    if (form.password !== form.confirm) return setError('Las contraseñas no coinciden')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password: form.password }),
+      })
+      const data = await res.json()
+      if (!res.ok) return setError(data.error || 'Error al restablecer')
+      setDone(true)
+    } catch {
+      setError('Error de conexión. Intentá de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <>
+      <Head>
+        <title>Nueva contraseña — Siembra a Futuro</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+      </Head>
+      <style>{`
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: ${S.bg}; }
+        input:focus { outline: none; border-color: ${S.accent} !important; }
+        .btn-p:hover { background: #2563eb !important; }
+        .btn-p:disabled { opacity: 0.5; cursor: not-allowed; }
+        a { color: ${S.accent}; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+      `}</style>
+
+      <div style={{ minHeight: '100vh', background: S.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 20px', fontFamily: "'DM Sans', sans-serif" }}>
+        <div style={{ width: '100%', maxWidth: '380px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: '18px', fontWeight: 700, color: S.white }}>
+              SIEMBRA<span style={{ color: S.accent }}> A FUTURO</span>
+            </div>
+          </div>
+
+          <div style={{ background: S.card, border: `1px solid ${S.borderL}`, borderRadius: '14px', padding: '32px 28px' }}>
+            {!token && (
+              <div style={{ textAlign: 'center', color: '#f87171' }}>
+                <div style={{ fontSize: '32px', marginBottom: '12px' }}>⚠</div>
+                <div style={{ marginBottom: '16px' }}>Enlace inválido.</div>
+                <Link href="/olvide-password">Solicitar uno nuevo</Link>
+              </div>
+            )}
+
+            {token && done && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
+                <div style={{ fontSize: '20px', fontWeight: 700, color: S.white, marginBottom: '10px' }}>¡Contraseña actualizada!</div>
+                <div style={{ fontSize: '14px', color: S.muted, marginBottom: '24px' }}>Tu contraseña fue restablecida correctamente.</div>
+                <Link href="/login">Iniciar sesión →</Link>
+              </div>
+            )}
+
+            {token && !done && (
+              <>
+                <div style={{ fontSize: '22px', fontWeight: 700, color: S.white, marginBottom: '6px' }}>Nueva contraseña</div>
+                <div style={{ fontSize: '13px', color: S.muted, marginBottom: '24px' }}>Creá una contraseña segura para tu cuenta.</div>
+                <form onSubmit={handleSubmit}>
+                  {[
+                    { key: 'password', label: 'Nueva contraseña', placeholder: 'Mínimo 8 caracteres' },
+                    { key: 'confirm', label: 'Confirmá la contraseña', placeholder: 'Repetí la contraseña' },
+                  ].map(({ key, label, placeholder }) => (
+                    <div key={key} style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: S.muted, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '6px' }}>{label}</label>
+                      <input
+                        type="password" value={form[key]} onChange={set(key)} required placeholder={placeholder}
+                        style={{ width: '100%', background: '#071020', border: `1px solid ${S.border}`, borderRadius: '8px', padding: '11px 14px', color: S.text, fontSize: '14px', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' }}
+                      />
+                    </div>
+                  ))}
+                  {error && (
+                    <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '8px', padding: '10px 14px', color: '#f87171', fontSize: '13px', marginBottom: '16px' }}>
+                      ⚠ {error}
+                    </div>
+                  )}
+                  <button
+                    type="submit" disabled={loading} className="btn-p"
+                    style={{ width: '100%', background: S.accent, color: S.white, border: 'none', borderRadius: '8px', padding: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'background 0.18s' }}
+                  >
+                    {loading ? 'Guardando...' : 'Guardar contraseña'}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}

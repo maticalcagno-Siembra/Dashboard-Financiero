@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
+import Link from "next/link";
 
 export default function MarketPulse() {
   const [data, setData] = useState(null);
@@ -7,6 +8,19 @@ export default function MarketPulse() {
   const [error, setError] = useState(null);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [collapsed, setCollapsed] = useState(new Set());
+  const [authUser, setAuthUser] = useState(undefined); // undefined=loading, null=no auth
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then(({ user }) => setAuthUser(user || null))
+      .catch(() => setAuthUser(null));
+  }, []);
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setAuthUser(null);
+  };
 
   const toggleSection = (id) => {
     setCollapsed((prev) => {
@@ -121,6 +135,25 @@ export default function MarketPulse() {
               <span className={loading ? "mp-spin" : ""}>⟳</span>
               {loading ? "Buscando datos..." : "Actualizar mercado"}
             </button>
+            {authUser === undefined ? null : authUser ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Link href={authUser.role === "ADMIN" ? "/admin" : "/mi-cuenta"} style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#7ab3e0", textDecoration: "none", padding: "7px 14px", borderRadius: "6px", border: "1px solid #1a3a5c", background: "#0d1f33" }}>
+                  {authUser.role === "ADMIN" ? "⚙ Admin" : "👤 Mi cuenta"}
+                </Link>
+                <button onClick={handleLogout} style={{ background: "transparent", border: "1px solid #0f2035", color: "#2e4a63", padding: "7px 12px", borderRadius: "6px", cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: "12px" }}>
+                  Salir
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <Link href="/login" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#7ab3e0", textDecoration: "none", padding: "7px 14px", borderRadius: "6px", border: "1px solid #1a3a5c", background: "#0d1f33" }}>
+                  Iniciar sesión
+                </Link>
+                <Link href="/registro" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#fff", textDecoration: "none", padding: "7px 14px", borderRadius: "6px", background: "#3b82f6", fontWeight: 600 }}>
+                  Registrarse
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 

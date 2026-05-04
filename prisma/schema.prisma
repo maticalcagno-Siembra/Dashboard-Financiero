@@ -1,0 +1,62 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String        @id @default(cuid())
+  email                String        @unique
+  password             String
+  name                 String
+  phone                String?
+  role                 Role          @default(USER)
+  active               Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  resetPasswordToken   String?       @unique
+  resetPasswordExpires DateTime?
+  products             UserProduct[]
+}
+
+model Product {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  description String?
+  price       Float
+  type        ProductType   @default(PRODUCT)
+  active      Boolean       @default(true)
+  imageUrl    String?
+  accessUrl   String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  users       UserProduct[]
+}
+
+model UserProduct {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  purchasedAt DateTime @default(now())
+  active      Boolean  @default(true)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ProductType {
+  PRODUCT
+  PACK
+  COURSE
+  SUBSCRIPTION
+}
